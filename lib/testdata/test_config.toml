@@ -1,0 +1,24 @@
+[provisioner]
+gitlabGroup = "some group"
+gitlabProject = "some project"
+mailgunWelcomeTemplate = "some template"
+
+[[useradmin.groups]]
+name = "management"
+gitlabID = 66
+
+[[useradmin.groups]]
+name = "helpdesk"
+gitlabID = 67
+
+[[provisioner.rules]]
+name = "first test entry"
+skill = "some skill"
+team = "some team"
+channels = ["channel1", "channel2"]
+
+[[provisioner.rules]]
+name = "second test entry"
+skill = "another skill"
+team = "some team"
+channels = ["channel2", "channel3"] 

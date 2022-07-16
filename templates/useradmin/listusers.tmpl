@@ -1,0 +1,213 @@
+{{ define "header-listusers" }}
+<h1>Hello world</h1>
+{{ end }}
+
+<section class="section">
+
+    <form id="user-actions" method="post" action="">
+    <input type="hidden" name="action" />
+    <input type="hidden" name="param" />
+    <div class="container">
+        <table class="table">
+            <thead>
+                <tr>
+                <th></th>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>&nbsp</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {{ range .Users }}
+                <tr>
+                <td><input id="user-selection-checkbox" type="checkbox" name="user" value="{{.ID}}"/></td> 
+                <th>{{ .ID }}</th>
+                <td id="username">{{ .Username }}</td>
+                <td>{{ .Name }}</td>
+                <td>{{ .Email }}</td>
+                <td>
+                    <span class="tag{{if eq .State "blocked"}} is-danger{{end}}">{{.State}}</span>
+                    {{if .IsAdmin}}<span class="tag is-black">gitlab admin</span>{{end}}
+                    {{range .Groups}}
+                        <span class="tag {{index $.GroupClass .}}">{{.}}</span>
+                    {{end}}
+                </td>
+                </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+    </form>
+
+    <nav class="level">
+        <div class="level-left">
+            <div class="level-item">
+                <p class="subtitle is-8">
+                    With selected users:
+                </p>
+            </div>
+            <div class="level-item">
+                <buttons>
+                    <button id="block-users-button" class="button is-danger is-outlined is-small" type="button" disabled>
+                        Block
+                    </button>
+                    <button id="unblock-users-button" class="button is-success is-outlined is-small" type="button" disabled>
+                        Unblock
+                    </button>
+                    <div class="select is-small is-info">
+                        <select id="add-group-select" disabled>
+                            <option selected disabled>[Add to group]</option>
+                            {{range $group, $class := .GroupClass}}
+                            <option value="{{$group}}">{{$group}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="select is-small is-info">
+                        <select id="remove-group-select" disabled>
+                            <option selected disabled>[Remove group]</option>
+                            {{range $group, $class := .GroupClass}}
+                            <option value="{{$group}}">{{$group}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                </buttons>
+            </div>
+        </div>
+    </nav>
+    
+    {{ with .Pages }}
+    <div class="container">
+        <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+            {{if gt .This 1}}<a class="pagination-previous" href="?show={{.Show}}&page={{add .This -1}}">Previous</a>{{end}}
+            <ul class="pagination-list">
+                {{if gt .This 2}}<li><a class="pagination-link" aria-label="Goto page 1" href="?show={{.Show}}&page=1">1</a></li>{{end}}
+                {{if gt .This 3}}<li><span class="pagination-ellipsis">&hellip;</span></li>{{end}}
+                {{if gt .This 1}}<li><a class="pagination-link" aria-label="Goto page {{add .This -1}}" href="?show={{.Show}}&page={{add .This -1}}">{{add .This -1}}</a></li>{{end}}
+                <li><a class="pagination-link is-current" aria-label="Page {{.This}}" aria-current="page">{{.This}}</a></li>
+                {{if ge .NumAfter 1}}<li><a class="pagination-link" aria-label="Goto page {{add .This 1}}" href="?show={{.Show}}&page={{add .This 1}}">{{add .This 1}}</a></li>{{end}}
+                {{if ge .NumAfter 3}}<li><span class="pagination-ellipsis">&hellip;</span></li>{{end}}
+                {{if ge .NumAfter 2}}<li><a class="pagination-link" aria-label="Goto page {{.Last}}" href="?show={{.Show}}&page={{.Last}}">{{.Last}}</a></li>{{end}}
+            </ul>
+            {{if lt .This .Last}}<a class="pagination-next" href="?show={{.Show}}&page={{add .This 1}}">Next</a>{{end}}
+        </nav>
+    </div>
+    {{ end }}
+
+    <div id="block-users-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Block users</p>
+            </header>
+            <section class="modal-card-body">
+                <div class="content">
+                <p>The following users will be blocked:</p>
+                <ul id="users-to-block"></ul>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button id="block-users-submit" class="button is-danger">Block</button>
+                <button id="block-users-cancel" class="button" type="button">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <div id="unblock-users-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Unblock users</p>
+            </header>
+            <section class="modal-card-body">
+                <div class="content">
+                <p>The following users will be unblocked:</p>
+                <ul id="users-to-unblock"></ul>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button id="unblock-users-submit" class="button is-success">Unblock</button>
+                <button id="unblock-users-cancel" class="button" type="button">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+</section>
+
+<script>
+    function updateSelectedUsers(node) {
+        node.children().remove();
+        var found = false;
+        u('form#user-actions table>tbody>tr').each(function (row, i) {
+            row = u(row);
+            if (!row.find('input#user-selection-checkbox').first().checked) {
+                return;
+            }
+            node.append('<li>'+row.find('td#username').text()+'</li>');
+            found = true;
+        });
+        return found;
+    }
+
+    // Update and show user actions modals.
+    u('#block-users-button').on('click', function() {
+        if (!updateSelectedUsers(u('#users-to-block'))) {
+            return;
+        }
+        u('#block-users-modal').addClass('is-active');
+    });
+    u('#unblock-users-button').on('click', function() {
+        if (!updateSelectedUsers(u('#users-to-unblock'))) {
+            return;
+        }
+        u('#unblock-users-modal').addClass('is-active');
+    });
+
+    // Submit group action form.
+    u('select#add-group-select').on('change', function() {
+        var group = u('select#add-group-select').first().value;
+        u('form#user-actions > input[name=action]').attr('value', 'addgroup');
+        u('form#user-actions > input[name=param]').attr('value', group);
+        u('form#user-actions').first().submit();
+    });
+    u('select#remove-group-select').on('change', function() {
+        var group = u('select#remove-group-select').first().value;
+        u('form#user-actions > input[name=action]').attr('value', 'removegroup');
+        u('form#user-actions > input[name=param]').attr('value', group);
+        u('form#user-actions').first().submit();
+    });
+
+    // Submit user actions form.
+    u('#block-users-submit').on('click', function() {
+        u('form#user-actions > input[name=action]').attr('value', 'block');
+        u('form#user-actions').first().submit();
+    });
+    u('#unblock-users-submit').on('click', function() {
+        u('form#user-actions > input[name=action]').attr('value', 'unblock');
+        u('form#user-actions').first().submit();
+    });
+
+    // Cancel user actions modals.
+    u('#block-users-cancel').on('click', function() {
+        u('#block-users-modal').removeClass('is-active');
+    });
+    u('#unblock-users-cancel').on('click', function() {
+        u('#unblock-users-modal').removeClass('is-active');
+    });
+
+    // Only enable action buttons when a row is selected.
+    u('form#user-actions input#user-selection-checkbox').on('change', function() {
+        var found = false;
+        u('form#user-actions input#user-selection-checkbox').each(function(node, i) {
+            if (node.checked) {
+                found = true;
+            }
+        });
+        u('button#block-users-button').first().disabled = !found;
+        u('button#unblock-users-button').first().disabled = !found;
+        u('select#add-group-select').first().disabled = !found;
+        u('select#remove-group-select').first().disabled = !found;
+    });
+</script>

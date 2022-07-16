@@ -1,0 +1,22 @@
+
+<section class="section">
+    <h3 class="title">{{.Title}}</h3>
+
+    {{range .Entities}}
+    <article class="message{{if .HasErrors}} is-danger{{end}}">
+        <div class="message-body">
+            <p><strong>{{.Name}}</strong></p>
+            <ul>
+                {{range .Log}}
+                <li>{{if eq .Type "error"}}<span class="tag is-danger">Error</span>{{end}}{{.Log}}</li>
+                {{end}}
+            </ul>
+        </div>
+    </article>
+    {{end}}
+
+    {{ if .RefURL }}
+        <a class="button is-link" href="{{.RefURL}}">Go back</a>
+    {{ end }}
+
+</section>

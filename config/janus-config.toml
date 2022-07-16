@@ -1,0 +1,24 @@
+[provisioner]
+gitlabGroup = "test-group"
+# gitlabProject = ""
+
+mailgunWelcomeTemplate = "test-template-001"
+
+[[useradmin.groups]]
+name = "management"
+gitlabID = 66
+tagClass = "is-info"  # see bulma.io/documentation/elements/tag/#colors
+
+[[useradmin.groups]]
+name = "testgroup"
+gitlabID = 34
+
+[[provisioner.rules]]
+skill = "Programming"
+team = "s5c8rtb9u383de3oozg4amyiyy"
+channels = ["yhowczogojgpp8drqbop78qpho", "kxxfs3671td38kpmzxaxi3qfba"]
+
+[[provisioner.rules]]
+skill = "Data analysis"
+team = "s5c8rtb9u383de3oozg4amyiyy"
+channels = ["kxxfs3671td38kpmzxaxi3qfba", "rmb4s7udb7n95khay7stwjfohr"] 
